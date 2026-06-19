@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node ./dist/app/index.js",
     "dev": "tsx --env-file=.env --watch app/index.ts",
+    "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
