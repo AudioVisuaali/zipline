@@ -4,6 +4,11 @@ import { notFoundMiddleware } from "./middlewares/notFoundMiddleware";
 import { enforceMaxFiles, resolveFileHandler, upload } from "./storage";
 import { requireAuthMiddleware } from "./middlewares/requireAuthMiddleware";
 
+const port = Number.parseInt(process.env.PORT ?? "", 10);
+if (Number.isNaN(port) || port <= 0 || port > 65535) {
+  throw new Error("PORT is missing or invalid");
+}
+
 const app = express();
 
 app.post(
@@ -22,6 +27,6 @@ app.use("/", resolveFileHandler);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-app.listen(3000, () => {
-  console.log("Listening on post 3000");
+app.listen(port, () => {
+  console.log(`Listening on post ${port}`);
 });
