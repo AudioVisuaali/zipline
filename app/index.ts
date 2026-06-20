@@ -58,7 +58,7 @@ app.get("/upload/:slug", async (req, res) => {
   return res.send(renderUploadSuccessPage(req.params.slug));
 });
 
-app.use("/file", resolveFileHandler);
+app.use("/", resolveFileHandler);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

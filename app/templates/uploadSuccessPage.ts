@@ -1,7 +1,7 @@
 import { apiBaseUrl } from "../path";
 
 export function renderUploadSuccessPage(filename: string) {
-  const url = new URL(`/file/${filename}`, apiBaseUrl).href;
+  const url = new URL(`/${filename}`, apiBaseUrl).href;
   return `
 <!DOCTYPE html>
 <html lang="en">
