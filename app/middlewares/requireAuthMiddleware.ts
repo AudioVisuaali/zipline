@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { wantsJson } from "../accept";
+import { renderGenericFailurePage } from "../templates/genericErrorPage";
 
 const apiKey = process.env.API_KEY;
 if (!apiKey) {
@@ -10,19 +12,14 @@ export function requireAuthMiddleware(
   res: Response,
   next: NextFunction,
 ) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res
-      .status(401)
-      .json({ error: "Missing or invalid authorization header" });
+  if (req.body.secret === apiKey) {
+    return next();
   }
-
-  const token = authHeader.slice(7);
-
-  if (token !== apiKey) {
+  if (wantsJson(req)) {
     return res.status(401).json({ error: "Invalid token" });
   }
 
-  next();
+  return res
+    .status(401)
+    .send(renderGenericFailurePage("401", "Invalid authorization"));
 }
