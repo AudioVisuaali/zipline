@@ -226,11 +226,112 @@ const template = `
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     transition: opacity 0.15s ease;
   }
 
   .submit-btn:hover {
     opacity: 0.9;
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .submit-btn .spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .submit-btn.loading .spinner {
+    display: inline-block;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .recent-uploads {
+    display: none;
+    margin-top: 40px;
+  }
+
+  .recent-uploads.visible {
+    display: block;
+  }
+
+  .recent-uploads h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 0 0 12px;
+  }
+
+  .recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .recent-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recent-item-url {
+    display: block;
+    color: var(--text);
+    font-size: 0.9rem;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .recent-item-url:hover {
+    color: var(--accent);
+  }
+
+  .recent-item-time {
+    display: block;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-top: 2px;
+  }
+
+  .recent-item-remove {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 4px;
+  }
+
+  .recent-item-remove:hover {
+    color: var(--error);
   }
 </style>
 </head>
@@ -273,8 +374,16 @@ const template = `
         </div>
       </div>
 
-      <button type="submit" class="submit-btn" id="submitBtn">Upload</button>
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span class="spinner"></span>
+        <span class="submit-btn-text">Upload</span>
+      </button>
     </form>
+
+    <div class="recent-uploads" id="recentUploads">
+      <h2>Recent uploads</h2>
+      <div class="recent-list" id="recentList"></div>
+    </div>
 
   </div>
 
@@ -282,6 +391,9 @@ const template = `
     // This JS handles drag-and-drop UX and remembering the secret.
     // The actual submit is a plain form POST; nothing here intercepts it.
 
+    const uploadFormEl = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = submitBtn.querySelector('.submit-btn-text');
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const fileChip = document.getElementById('fileChip');
@@ -290,6 +402,15 @@ const template = `
     const secretInput = document.getElementById('secretInput');
     const secretChip = document.getElementById('secretChip');
     const secretChipChange = document.getElementById('secretChipChange');
+
+    // Purely visual — the browser performs the actual POST and
+    // navigation, this just shows a spinner while that happens.
+    // No preventDefault, so the native submit is never blocked.
+    uploadFormEl.addEventListener('submit', () => {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('loading');
+      submitBtnText.textContent = 'Uploading…';
+    });
 
     // Always start with no file selected, on every page load — covers
     // both fresh loads and bfcache-restored back/forward navigation,
@@ -398,7 +519,127 @@ const template = `
       fileInput.value = '';
       fileChip.classList.remove('visible');
       dropzone.querySelector('.dropzone-text').textContent = 'Drag and drop a video here, or click to browse';
+
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitBtnText.textContent = 'Upload';
+
+      renderRecentUploads();
     });
+
+    // ---- Recent uploads list ----
+    // Populated by upload-success.html when a user lands there after a
+    // successful upload. This page only reads/renders/removes entries.
+
+    const RECENT_UPLOADS_KEY = 'recent_uploads';
+    const RECENT_UPLOADS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+    const recentUploadsSection = document.getElementById('recentUploads');
+    const recentList = document.getElementById('recentList');
+
+    function getRecentUploads() {
+      let uploads;
+      try {
+        uploads = JSON.parse(localStorage.getItem(RECENT_UPLOADS_KEY)) || [];
+      } catch {
+        uploads = [];
+      }
+
+      const now = Date.now();
+      const fresh = uploads.filter(function (entry) {
+        const uploadedAt = new Date(entry.uploadedAt).getTime();
+        return now - uploadedAt < RECENT_UPLOADS_TTL_MS;
+      });
+
+      // persist the pruned list so expired entries don't linger in storage
+      if (fresh.length !== uploads.length) {
+        setRecentUploads(fresh);
+      }
+
+      return fresh;
+    }
+
+    function setRecentUploads(uploads) {
+      localStorage.setItem(RECENT_UPLOADS_KEY, JSON.stringify(uploads));
+    }
+
+    function formatRelativeTime(date) {
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      const intervals = [
+        { label: 'year', secs: 31536000 },
+        { label: 'month', secs: 2592000 },
+        { label: 'day', secs: 86400 },
+        { label: 'hour', secs: 3600 },
+        { label: 'minute', secs: 60 }
+      ];
+
+      if (seconds < 60) return 'just now';
+
+      for (let i = 0; i < intervals.length; i++) {
+        const count = Math.floor(seconds / intervals[i].secs);
+        if (count >= 1) {
+          return count + ' ' + intervals[i].label + (count !== 1 ? 's' : '') + ' ago';
+        }
+      }
+      return 'just now';
+    }
+
+    function removeRecentUpload(url) {
+      const uploads = getRecentUploads().filter(function (entry) {
+        return entry.url !== url;
+      });
+      setRecentUploads(uploads);
+      renderRecentUploads();
+    }
+
+    function renderRecentUploads() {
+      const uploads = getRecentUploads();
+
+      if (uploads.length === 0) {
+        recentUploadsSection.classList.remove('visible');
+        recentList.innerHTML = '';
+        return;
+      }
+
+      recentUploadsSection.classList.add('visible');
+      recentList.innerHTML = '';
+
+      uploads.forEach(function (entry) {
+        const item = document.createElement('div');
+        item.className = 'recent-item';
+
+        const info = document.createElement('div');
+        info.className = 'recent-item-info';
+
+        const link = document.createElement('a');
+        link.className = 'recent-item-url';
+        link.href = entry.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = entry.url;
+
+        const time = document.createElement('span');
+        time.className = 'recent-item-time';
+        time.textContent = formatRelativeTime(new Date(entry.uploadedAt));
+
+        info.appendChild(link);
+        info.appendChild(time);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'recent-item-remove';
+        removeBtn.title = 'Remove from recent uploads';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', function () {
+          removeRecentUpload(entry.url);
+        });
+
+        item.appendChild(info);
+        item.appendChild(removeBtn);
+        recentList.appendChild(item);
+      });
+    }
+
+    renderRecentUploads();
   </script>
 </body>
 </html>

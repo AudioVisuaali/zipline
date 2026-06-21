@@ -179,7 +179,7 @@ export function renderUploadSuccessPage(filename: string) {
     </div>
 
     <div class="actions">
-      <a href="${url}" class="primary">View file</a>
+      <a href="${url}" class="primary">Open file</a>
       <a href="/" class="secondary">Upload another</a>
     </div>
   </div>
@@ -202,6 +202,40 @@ export function renderUploadSuccessPage(filename: string) {
         document.execCommand('copy');
       }
     });
+
+    // Record this upload in localStorage so the upload page can show
+    // the 5 most recent links. Stored per-browser, same pattern as the
+    // remembered secret. Entries older than 1 week are dropped.
+    const RECENT_UPLOADS_KEY = 'recent_uploads';
+    const MAX_RECENT_UPLOADS = 5;
+    const RECENT_UPLOADS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+
+    function saveRecentUpload(url) {
+      if (!url) return;
+
+      let uploads = [];
+      try {
+        uploads = JSON.parse(localStorage.getItem(RECENT_UPLOADS_KEY)) || [];
+      } catch {
+        uploads = [];
+      }
+
+      const now = Date.now();
+      uploads = uploads.filter((entry) => {
+        const uploadedAt = new Date(entry.uploadedAt).getTime();
+        return now - uploadedAt < RECENT_UPLOADS_TTL_MS;
+      });
+
+      // avoid duplicate entries if this page is reloaded
+      uploads = uploads.filter((entry) => entry.url !== url);
+
+      uploads.unshift({ url: url, uploadedAt: new Date().toISOString() });
+      uploads = uploads.slice(0, MAX_RECENT_UPLOADS);
+
+      localStorage.setItem(RECENT_UPLOADS_KEY, JSON.stringify(uploads));
+    }
+
+    saveRecentUpload(resultUrl.value);
   </script>
 </body>
 </html>
