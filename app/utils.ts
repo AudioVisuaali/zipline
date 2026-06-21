@@ -36,8 +36,8 @@ export function returnResponse(
   htmlResponse: () => string,
 ) {
   if (wantsJson(req)) {
-    return res.status(status).json(jsonResponse);
+    return res.status(status).json(jsonResponse());
   }
 
-  return res.status(status).send(htmlResponse);
+  return res.status(status).send(htmlResponse());
 }
