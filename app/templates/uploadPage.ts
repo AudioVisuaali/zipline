@@ -5,6 +5,7 @@ const template = `
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Share</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0f'/%3E%3Cpath d='M16 22V10M10 16l6-6 6 6' stroke='%236e6ef6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #0d0d0f;
@@ -75,6 +76,10 @@ const template = `
   .dropzone.dragover {
     border-color: var(--accent);
     background: #1a1a20;
+  }
+
+  .dropzone.error {
+    border-color: var(--error);
   }
 
   .dropzone-icon {
@@ -229,13 +234,14 @@ const template = `
       Browser sends a standard multipart/form-data POST and navigates
       to whatever the server returns.
     -->
-    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" novalidate>
       <div class="dropzone" id="dropzone">
         <div class="dropzone-icon">⬆</div>
         <p class="dropzone-text">Drag and drop a video here, or click to browse</p>
         <p class="dropzone-subtext">MP4, MOV, WebM, etc.</p>
         <input type="file" id="fileInput" class="file-input" name="file" required>
       </div>
+      <p class="field-error" id="fileError">Please choose a file to upload.</p>
 
       <div class="file-chip" id="fileChip">
         <span class="file-chip-name" id="fileChipName"></span>
@@ -245,6 +251,7 @@ const template = `
       <div class="field">
         <label for="secretInput">Secret</label>
         <input type="password" id="secretInput" name="secret" placeholder="Your upload secret" required>
+        <p class="field-error" id="secretError">Please enter your secret.</p>
         <div class="secret-chip" id="secretChip">
           <span class="secret-chip-text">Using stored secret</span>
           <button type="button" class="secret-chip-change" id="secretChipChange">Change</button>
