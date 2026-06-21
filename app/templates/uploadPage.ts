@@ -156,6 +156,7 @@ const template = `
   .field input[type="text"],
   .field input[type="password"] {
     width: 100%;
+    height: 42px;
     padding: 10px 12px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -176,9 +177,10 @@ const template = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    height: 42px;
+    padding: 0 12px;
+    background: rgba(74, 222, 128, 0.08);
+    border: 1px solid rgba(74, 222, 128, 0.3);
     border-radius: 8px;
     font-size: 0.9rem;
   }
@@ -188,7 +190,17 @@ const template = `
   }
 
   .secret-chip-text {
-    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+
+  .secret-chip-text svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--success);
   }
 
   .secret-chip-change {
@@ -234,14 +246,13 @@ const template = `
       Browser sends a standard multipart/form-data POST and navigates
       to whatever the server returns.
     -->
-    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" novalidate>
+    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
       <div class="dropzone" id="dropzone">
         <div class="dropzone-icon">⬆</div>
         <p class="dropzone-text">Drag and drop a video here, or click to browse</p>
         <p class="dropzone-subtext">MP4, MOV, WebM, etc.</p>
         <input type="file" id="fileInput" class="file-input" name="file" required>
       </div>
-      <p class="field-error" id="fileError">Please choose a file to upload.</p>
 
       <div class="file-chip" id="fileChip">
         <span class="file-chip-name" id="fileChipName"></span>
@@ -251,9 +262,13 @@ const template = `
       <div class="field">
         <label for="secretInput">Secret</label>
         <input type="password" id="secretInput" name="secret" placeholder="Your upload secret" required>
-        <p class="field-error" id="secretError">Please enter your secret.</p>
         <div class="secret-chip" id="secretChip">
-          <span class="secret-chip-text">Using stored secret</span>
+          <span class="secret-chip-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Using stored secret
+          </span>
           <button type="button" class="secret-chip-change" id="secretChipChange">Change</button>
         </div>
       </div>
