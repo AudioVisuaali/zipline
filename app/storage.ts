@@ -26,7 +26,7 @@ export async function saveFile(
 
 export const resolveFileHandler = express.static(path.resolve(uploadDir));
 
-export async function enforceMaxFiles(maxFiles = 10): Promise<void> {
+export async function enforceMaxFiles(maxFiles = 15): Promise<void> {
   const entries = await fs.readdir(uploadDir, { withFileTypes: true });
   const files = entries.filter((e) => e.isFile()).map((e) => e.name);
 
