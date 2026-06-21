@@ -11,9 +11,7 @@ import {
 import { requireAuthMiddleware } from "./middlewares/requireAuthMiddleware";
 import { renderUploadSuccessPage } from "./templates/uploadSuccessPage";
 import { renderUploadPage } from "./templates/uploadPage";
-import { generateSlug } from "./utils";
-import { wantsJson } from "./accept";
-import { createUrl } from "./path";
+import { createUrl, generateSlug, returnResponse } from "./utils";
 import { renderGenericFailurePage } from "./templates/genericErrorPage";
 
 const port = Number.parseInt(process.env.PORT ?? "", 10);
@@ -32,12 +30,13 @@ app.post(
   requireAuthMiddleware,
   async (req, res) => {
     if (!req.file) {
-      if (wantsJson(req)) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-      return res
-        .status(400)
-        .send(renderGenericFailurePage("400", "No file uploaded"));
+      return returnResponse(
+        req,
+        res,
+        200,
+        () => ({ error: "No file uploaded" }),
+        () => renderGenericFailurePage("400", "No file uploaded"),
+      );
     }
 
     const slug = generateSlug();
@@ -46,11 +45,13 @@ app.post(
     const filename = `${slug}${ext}`;
     await saveFile(filename, req.file.buffer);
     enforceMaxFiles();
-    if (wantsJson(req)) {
-      return res.json({ filename, url: createUrl(filename) });
-    }
-
-    return res.redirect(`/upload/${filename}`);
+    return returnResponse(
+      req,
+      res,
+      200,
+      () => ({ filename, url: createUrl(filename) }),
+      () => renderUploadSuccessPage(filename),
+    );
   },
 );
 

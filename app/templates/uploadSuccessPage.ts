@@ -1,4 +1,4 @@
-import { apiBaseUrl } from "../path";
+import { apiBaseUrl } from "../utils";
 
 export function renderUploadSuccessPage(filename: string) {
   const url = new URL(`/${filename}`, apiBaseUrl).href;

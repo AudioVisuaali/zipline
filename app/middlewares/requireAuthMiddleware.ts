@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { wantsJson } from "../accept";
 import { renderGenericFailurePage } from "../templates/genericErrorPage";
+import { returnResponse } from "../utils";
 
 const apiKey = process.env.API_KEY;
 if (!apiKey) {
@@ -15,11 +15,12 @@ export function requireAuthMiddleware(
   if (req.body.secret === apiKey) {
     return next();
   }
-  if (wantsJson(req)) {
-    return res.status(401).json({ error: "Invalid token" });
-  }
 
-  return res
-    .status(401)
-    .send(renderGenericFailurePage("401", "Invalid authorization"));
+  return returnResponse(
+    req,
+    res,
+    401,
+    () => ({ error: "Invalid token" }),
+    () => renderGenericFailurePage("401", "Invalid authorization"),
+  );
 }
