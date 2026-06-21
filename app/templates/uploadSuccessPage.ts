@@ -1,7 +1,7 @@
-import { apiBaseUrl } from "../utils";
+import { config } from "../config";
 
 export function renderUploadSuccessPage(filename: string) {
-  const url = new URL(`/${filename}`, apiBaseUrl).href;
+  const url = new URL(`/${filename}`, config.baseUrl).href;
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -168,7 +168,7 @@ export function renderUploadSuccessPage(filename: string) {
       </div>
       <h1>Upload complete</h1>
     </div>
-    <p class="subtext">Your video is ready to share.</p>
+    <p class="subtext">Your file is ready to share.</p>
 
     <div class="result">
       <label>URL</label>
@@ -179,7 +179,7 @@ export function renderUploadSuccessPage(filename: string) {
     </div>
 
     <div class="actions">
-      <a href="${url}" class="primary">View video</a>
+      <a href="${url}" class="primary">View file</a>
       <a href="/" class="secondary">Upload another</a>
     </div>
   </div>

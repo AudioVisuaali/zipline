@@ -1,19 +1,9 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-
-const envValue = process.env.API_BASE_URL;
-if (!envValue) {
-  throw new Error("API_BASE_URL is missing");
-}
-if (!/^https?:\/\/.+/.test(envValue)) {
-  throw new Error(
-    "API_BASE_URL must be a valid URL starting with http:// or https://",
-  );
-}
-export const apiBaseUrl = envValue;
+import { config } from "./config";
 
 export function createUrl(path: string) {
-  return new URL(path, apiBaseUrl).href;
+  return new URL(path, config.baseUrl).href;
 }
 
 export function generateSlug(length = 7) {
@@ -24,7 +14,7 @@ export function generateSlug(length = 7) {
     .slice(0, length);
 }
 
-function wantsJson(req: Request): boolean {
+export function wantsJson(req: Request): boolean {
   return req.accepts(["html", "json"]) === "json";
 }
 

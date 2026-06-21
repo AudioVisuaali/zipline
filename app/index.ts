@@ -1,26 +1,22 @@
-import path from "node:path";
 import express from "express";
 import { errorHandlerMiddleware } from "./middlewares/errorHandlerMiddleware";
 import { notFoundMiddleware } from "./middlewares/notFoundMiddleware";
-import {
-  enforceMaxFiles,
-  resolveFileHandler,
-  saveFile,
-  upload,
-} from "./storage";
 import { requireAuthMiddleware } from "./middlewares/requireAuthMiddleware";
 import { renderUploadSuccessPage } from "./templates/uploadSuccessPage";
 import { renderUploadPage } from "./templates/uploadPage";
-import { createUrl, generateSlug, returnResponse } from "./utils";
+import { createUrl, returnResponse, wantsJson } from "./utils";
 import { renderGenericFailurePage } from "./templates/genericErrorPage";
-
-const port = Number.parseInt(process.env.PORT ?? "", 10);
-if (Number.isNaN(port) || port <= 0 || port > 65535) {
-  throw new Error("PORT is missing or invalid");
-}
+import multer from "multer";
+import { storage } from "./storage/storage";
+import { enforceMaxFiles } from "./storage/maxFileCheck";
+import { config } from "./config";
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: config.maxFileSize },
+});
 
 app.get("/", (_req, res) => res.send(renderUploadPage()));
 
@@ -39,19 +35,21 @@ app.post(
       );
     }
 
-    const slug = generateSlug();
-    const ext = path.extname(req.file.originalname);
+    const { slug } = await storage.createFile({
+      originalFilename: req.file.originalname,
+      mimetype: req.file.mimetype,
+      name: req.file.originalname,
+      buffer: req.file.buffer,
+    });
+    console.log(`File uploaded (slug: ${slug})`);
 
-    const filename = `${slug}${ext}`;
-    await saveFile(filename, req.file.buffer);
     enforceMaxFiles();
-    return returnResponse(
-      req,
-      res,
-      200,
-      () => ({ filename, url: createUrl(filename) }),
-      () => renderUploadSuccessPage(filename),
-    );
+
+    if (wantsJson(req)) {
+      return res.status(200).json({ slug, url: createUrl(slug) });
+    }
+
+    res.redirect(`/upload/${slug}`);
   },
 );
 
@@ -59,11 +57,28 @@ app.get("/upload/:slug", async (req, res) => {
   return res.send(renderUploadSuccessPage(req.params.slug));
 });
 
-app.use("/", resolveFileHandler);
+app.get("/:slug", (req, res) => {
+  const fileData = storage.getFile(req.params.slug);
+  if (!fileData) {
+    return returnResponse(
+      req,
+      res,
+      400,
+      () => ({ error: "Not Found" }),
+      () => renderGenericFailurePage("400", "Not found"),
+    );
+  }
+
+  res.set({
+    "Content-Type": fileData.mimetype,
+    "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(fileData.originalFilename)}`,
+  });
+  return res.sendFile(storage.getFileBlobPath(req.params.slug));
+});
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-app.listen(port, () => {
-  console.log(`Listening on post ${port}`);
+app.listen(config.port, () => {
+  console.log(`Listening on post ${config.port}`);
 });
