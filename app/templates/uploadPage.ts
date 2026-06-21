@@ -319,19 +319,46 @@ const template = `
     margin-top: 2px;
   }
 
+  .recent-item-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .recent-item-copy,
   .recent-item-remove {
     flex-shrink: 0;
-    background: none;
-    border: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1;
-    padding: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .recent-item-copy:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(110, 110, 246, 0.1);
+  }
+
+  .recent-item-copy.copied {
+    color: var(--success);
+    border-color: var(--success);
   }
 
   .recent-item-remove:hover {
     color: var(--error);
+    border-color: var(--error);
+    background: rgba(248, 113, 113, 0.1);
   }
 </style>
 </head>
@@ -381,7 +408,7 @@ const template = `
     </form>
 
     <div class="recent-uploads" id="recentUploads">
-      <h2>Recent uploads</h2>
+      <h2>Your recent uploads</h2>
       <div class="recent-list" id="recentList"></div>
     </div>
 
@@ -591,6 +618,27 @@ const template = `
       renderRecentUploads();
     }
 
+    async function copyRecentUrl(url, button) {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const temp = document.createElement('textarea');
+        temp.value = url;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+      }
+
+      const originalText = button.textContent;
+      button.textContent = '✓';
+      button.classList.add('copied');
+      setTimeout(function () {
+        button.textContent = originalText;
+        button.classList.remove('copied');
+      }, 1200);
+    }
+
     function renderRecentUploads() {
       const uploads = getRecentUploads();
 
@@ -619,10 +667,23 @@ const template = `
 
         const time = document.createElement('span');
         time.className = 'recent-item-time';
+        time.dataset.uploadedAt = entry.uploadedAt;
         time.textContent = formatRelativeTime(new Date(entry.uploadedAt));
 
         info.appendChild(link);
         info.appendChild(time);
+
+        const actions = document.createElement('div');
+        actions.className = 'recent-item-actions';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'recent-item-copy';
+        copyBtn.title = 'Copy link';
+        copyBtn.textContent = '⧉';
+        copyBtn.addEventListener('click', function () {
+          copyRecentUrl(entry.url, copyBtn);
+        });
 
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -633,13 +694,25 @@ const template = `
           removeRecentUpload(entry.url);
         });
 
+        actions.appendChild(copyBtn);
+        actions.appendChild(removeBtn);
+
         item.appendChild(info);
-        item.appendChild(removeBtn);
+        item.appendChild(actions);
         recentList.appendChild(item);
       });
     }
 
     renderRecentUploads();
+
+    // Keep relative timestamps ("3 minutes ago") fresh without
+    // re-rendering the whole list (which would interrupt any in-flight
+    // copy-button feedback state).
+    setInterval(function () {
+      document.querySelectorAll('.recent-item-time').forEach(function (el) {
+        el.textContent = formatRelativeTime(new Date(el.dataset.uploadedAt));
+      });
+    }, 30000);
   </script>
 </body>
 </html>
