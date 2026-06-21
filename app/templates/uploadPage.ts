@@ -344,6 +344,11 @@ const template = `
     transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   }
 
+  .recent-item-copy svg {
+    width: 15px;
+    height: 15px;
+  }
+
   .recent-item-copy:hover {
     color: var(--accent);
     border-color: var(--accent);
@@ -353,6 +358,7 @@ const template = `
   .recent-item-copy.copied {
     color: var(--success);
     border-color: var(--success);
+    background: rgba(74, 222, 128, 0.1);
   }
 
   .recent-item-remove:hover {
@@ -630,11 +636,11 @@ const template = `
         document.body.removeChild(temp);
       }
 
-      const originalText = button.textContent;
-      button.textContent = '✓';
+      const originalHtml = button.innerHTML;
+      button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
       button.classList.add('copied');
       setTimeout(function () {
-        button.textContent = originalText;
+        button.innerHTML = originalHtml;
         button.classList.remove('copied');
       }, 1200);
     }
@@ -680,7 +686,7 @@ const template = `
         copyBtn.type = 'button';
         copyBtn.className = 'recent-item-copy';
         copyBtn.title = 'Copy link';
-        copyBtn.textContent = '⧉';
+        copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
         copyBtn.addEventListener('click', function () {
           copyRecentUrl(entry.url, copyBtn);
         });
